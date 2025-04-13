@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, TextInput } from "react-native"
 import { router } from "expo-router"
-import { Plus, Filter, Search, X } from "lucide-react-native"
-import { useAuth } from "@/components/auth-provider"
+import { Plus, Search} from "lucide-react-native"
 import BillItem from "@/components/bill-item"
 import { Bill } from "@/types/types"
 import { apiClient } from "@/api/client"
@@ -12,34 +11,20 @@ import useStore from "../globle/globel"
 
 
 export default function HomeScreen() {
-  const { user } = useAuth()
   const [statusFilter, setStatusFilter] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
-  const [showSearch, setShowSearch] = useState(false)
-  const [filterType, setFilterType] = useState("All")
   const { bills, setBills} = useStore()
   const [filteredBills, setFilteredBills] = useState<Bill[]>([])
 
   const fetchBills = async () => {
-    let fetchedBills: any
-
-    const query = searchQuery.toLowerCase()
-
-    if (filterType === "Shop" && query) {
-      fetchedBills = await apiClient.bills.getByShop(query)
-    } else if (filterType === "Doctor" && query) {
-      fetchedBills = await apiClient.bills.getByDoctor(query)
-    } else if (filterType === "Invoice" && query) {
-      fetchedBills = await apiClient.bills.getByInvoice(query)
-    } else {
-      fetchedBills = await apiClient.bills.getAll()
-    }
+    const fetchedBills = await apiClient.bills.search(searchQuery)
+    console.log(fetchedBills)
     setBills(fetchedBills.data)
   }
 
   useEffect(() => {
     fetchBills()
-  }, [searchQuery, filterType])
+  }, [searchQuery])
   
 
   useEffect(() => {
@@ -58,9 +43,6 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.welcomeText}>Welcome, {user?.name || "User"}</Text>
-
-        {showSearch ? (
           <View style={styles.searchContainer}>
             <Search size={18} color="#757575" />
             <TextInput
@@ -70,36 +52,7 @@ export default function HomeScreen() {
               onChangeText={setSearchQuery}
               autoFocus
             />
-            <TouchableOpacity
-              onPress={() => {
-                setSearchQuery("")
-                setShowSearch(false)
-              }}
-            >
-              <X size={18} color="#757575" />
-            </TouchableOpacity>
           </View>
-        ) : (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.searchButton} onPress={() => setShowSearch(true)}>
-              <Search size={20} color="#2E7D32" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.filterButton}
-              onPress={() => {
-                // Toggle between filter types
-                if (filterType === "All") setFilterType("Shop")
-                else if (filterType === "Shop") setFilterType("Doctor")
-                else if (filterType === "Doctor") setFilterType("Invoice")
-                else setFilterType("All")
-              }}
-            >
-              <Filter size={20} color="#2E7D32" />
-              <Text style={styles.filterTypeText}>{filterType === "All" ? "All" : `By ${filterType}`}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         <View style={styles.filterContainer}>
           <View style={styles.filterButtons}>

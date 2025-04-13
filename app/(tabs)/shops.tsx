@@ -16,14 +16,7 @@ export default function ShopsScreen() {
   const { shops, setShops} = useStore()
 
   const fetchShops = async () => {
-    let fetchedShops: any
-
-    if (searchQuery) {
-      fetchedShops = await apiClient.shops.search(searchQuery)
-    } else {
-      fetchedShops = await apiClient.shops.getAll()
-    }
-    console.log(fetchedShops)
+    const fetchedShops = await apiClient.shops.search(searchQuery)
     setShops(fetchedShops.data)
   }
   

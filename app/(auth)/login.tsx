@@ -28,40 +28,40 @@ export default function LoginScreen() {
   }
 
   const handleLogin = () => {
-    let isValid = true
+      let isValid = true
 
-    // Reset errors
-    setEmailError("")
-    setPasswordError("")
-
-    // Validate email
-    if (!email) {
-      setEmailError("Email is required")
-      isValid = false
-    } else if (!validateEmail(email)) {
-      setEmailError("Please enter a valid email address")
-      isValid = false
-    }
-
-    // Validate password
-    if (!password) {
-      setPasswordError("Password is required")
-      isValid = false
-    } else if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters")
-      isValid = false
-    }
-
-    if (isValid) {
-      // Simulate login - in a real app, this would call an API
-      signIn(email, password)
-        .then(() => {
-          router.replace("/(tabs)/home")
-        })
-        .catch((error) => {
-          Alert.alert("Login Failed", "Incorrect email or password")
-        })
-    }
+      // Reset errors
+      setEmailError("")
+      setPasswordError("")
+  
+      // Validate email
+      if (!email) {
+        setEmailError("Email is required")
+        isValid = false
+      } else if (!validateEmail(email)) {
+        setEmailError("Please enter a valid email address")
+        isValid = false
+      }
+  
+      // Validate password
+      if (!password) {
+        setPasswordError("Password is required")
+        isValid = false
+      } else if (password.length < 6) {
+        setPasswordError("Password must be at least 6 characters")
+        isValid = false
+      }
+  
+      if (isValid) {
+  
+        signIn(email, password)
+          .then(() => {
+            router.replace("/(tabs)/home")
+          })
+          .catch((error) => {
+            Alert.alert("Login Failed", "Incorrect email or password")
+          })
+      }
   }
 
   return (

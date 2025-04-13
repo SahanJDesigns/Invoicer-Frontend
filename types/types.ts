@@ -1,5 +1,3 @@
-import Product from "@/server/models/Product";
-import mongoose from "mongoose";
 
 export type Bill = {
   _id: string;
@@ -9,6 +7,7 @@ export type Bill = {
   totalAmount: number;
   currentPayment: number;
   payments: {
+      _id: string
       amount: number
       date: Date
     }[]

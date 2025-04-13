@@ -1,11 +1,6 @@
-import { updateBillStatus } from "@/server/controllers/billController"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
-const API_URL = "http://localhost:5000/api"
-
-// Or for local development:
-// const API_URL = 'http://10.0.2.2:5000/api'; // Use this for Android emulator
-// const API_URL = 'http://localhost:5000/api'; // Use this for iOS simulator
+const API_URL = "https://invoicer-backend-production.up.railway.app/api"
 
 // Helper function to get auth token
 const getToken = async () => {
@@ -33,6 +28,7 @@ export const apiClient = {
   // Auth endpoints
   auth: {
     login: async (email: string, password: string) => {
+      try{
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
@@ -42,62 +38,34 @@ export const apiClient = {
       })
 
       const data = await handleResponse(response)
-
-      // Save the token to AsyncStorage
       if (data.token) {
         await AsyncStorage.setItem("token", data.token)
       }
-
       return data
+    } catch (error) {
+      return null
+    }
     },
 
-    register: async (userData: any) => {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      })
+    // getCurrentUser: async () => {
+    //   const token = await getToken()
 
-      return handleResponse(response)
-    },
+    //   if (!token) {
+    //     throw new Error("No authentication token found")
+    //   }
 
-    getCurrentUser: async () => {
-      const token = await getToken()
+    //   const response = await fetch(`${API_URL}/auth/me`, {
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //     },
+    //   })
 
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-      const response = await fetch(`${API_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      return handleResponse(response)
-    },
+    //   return handleResponse(response)
+    // },
   },
 
   // Shop endpoints
   shops: {
-    getAll: async () => {
-      const token = await getToken()
-
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-      const response = await fetch(`${API_URL}/shops`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      return handleResponse(response)
-    },
-
     getById: async (id: string) => {
       const token = await getToken()
 
@@ -175,7 +143,6 @@ export const apiClient = {
       if (!token) {
         throw new Error("No authentication token found")
       }
-
       const response = await fetch(`${API_URL}/shops/search?query=${encodeURIComponent(query)}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -188,29 +155,17 @@ export const apiClient = {
 
   // Bill endpoints
   bills: {
-    getAll: async (filters = {}) => {
+    search: async (query:string) => {
       const token = await getToken()
 
       if (!token) {
         throw new Error("No authentication token found")
       }
-
-      // Convert filters object to query string
-      const queryParams = new URLSearchParams()
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) {
-          queryParams.append(key, value as string)
-        }
-      })
-
-      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : ""
-      console.log(queryString)
-      const response = await fetch(`${API_URL}/bills${queryString}`, {
+      const response = await fetch(`${API_URL}/bills/search?query=${encodeURIComponent(query)}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
-
       return handleResponse(response)
     },
 
@@ -222,54 +177,6 @@ export const apiClient = {
       }
 
       const response = await fetch(`${API_URL}/bills/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      return handleResponse(response)
-    },
-
-    getByInvoice: async (invoiceId: string) => {
-      const token = await getToken()
-
-      if (!token) {
-      throw new Error("No authentication token found")
-      }
-
-      const response = await fetch(`${API_URL}/bills/byinvoice/${invoiceId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      })
-
-      return handleResponse(response)
-    },
-
-    getByDoctor: async (doctorName: string) => {
-      const token = await getToken()
-
-      if (!token) {
-      throw new Error("No authentication token found")
-      }
-
-      const response = await fetch(`${API_URL}/bills/bydoctor/${doctorName}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      })
-
-      return handleResponse(response)
-    },
-
-    getByShop: async (shopName: string) => {
-      const token = await getToken()
-
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-      const response = await fetch(`${API_URL}/bills/byshop/${shopName}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -297,25 +204,6 @@ export const apiClient = {
       return handleResponse(response)
     },
 
-    updateStatus: async (id: string, status: "Paid" | "Unpaid") => {
-      const token = await getToken()
-
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-      const response = await fetch(`${API_URL}/bills/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      })
-
-      return handleResponse(response)
-    },
-
     addPayment: async (id: string, amount: number, ) => {
       const token = await getToken()
 
@@ -330,7 +218,23 @@ export const apiClient = {
         },
         body: JSON.stringify({ amount }),
       });
-      console.log(response)
+
+      return handleResponse(response)
+    },
+    deletePayment: async (paymentId: string) => {
+      const token = await getToken()
+      console.log(paymentId)
+      if(token){
+        throw new Error("No authentication token found")
+      }
+
+      const response = await fetch(`${API_URL}/bills/deletepayment/${paymentId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
     },
 
     delete: async (id: string) => {
@@ -349,22 +253,18 @@ export const apiClient = {
 
       return handleResponse(response)
     },
-
-   
   },
 
   // Product endpoints
   products: {
-    getAll: async (search = "") => {
+    search: async (search = "") => {
       const token = await getToken()
 
       if (!token) {
         throw new Error("No authentication token found")
       }
 
-      const queryString = search ? `?search=${encodeURIComponent(search)}` : ""
-
-      const response = await fetch(`${API_URL}/products${queryString}`, {
+      const response = await fetch(`${API_URL}/products/search?query=${encodeURIComponent(search)}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -388,61 +288,5 @@ export const apiClient = {
 
       return handleResponse(response)
     },
-
-    create: async (productData: any) => {
-      const token = await getToken()
-
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-      const response = await fetch(`${API_URL}/products`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(productData),
-      })
-
-      return handleResponse(response)
-    },
-
-    update: async (id: string, productData: any) => {
-      const token = await getToken()
-
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-      const response = await fetch(`${API_URL}/products/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(productData),
-      })
-
-      return handleResponse(response)
-    },
-
-    delete: async (id: string) => {
-      const token = await getToken()
-
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-      const response = await fetch(`${API_URL}/products/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      return handleResponse(response)
-    },
   },
 }
-

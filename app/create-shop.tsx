@@ -67,7 +67,6 @@ export default function CreateShopScreen() {
           contactNumber,
         })
         
-        console.log(response.data)
         addShop(response.data)
         
         Alert.alert("Success", "Shop created successfully", [

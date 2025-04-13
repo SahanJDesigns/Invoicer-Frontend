@@ -10,25 +10,20 @@ import { Product, Shop } from "@/types/types"
 
 export default function CreateBillScreen() {
   const { shop } = useLocalSearchParams()
-  const parsedShop = shop ? (JSON.parse(shop as string) as Shop) : null
-  
-  const [shops, setShops] = useState<Shop[]>([])
+  const parsedShop = shop ? (JSON.parse(shop as string)) : null
+
   const [products, setProducts] = useState<Product[]>([])
   
-  const [selectedShop, setSelectedShop] = useState<Shop | null>(parsedShop)
   const [selectedProducts, setSelectedProducts] = useState<(Product & { quantity: number })[]>([])
-  const [showShopModal, setShowShopModal] = useState(false)
   const [showProductModal, setShowProductModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [shopsResponse, productsResponse] = await Promise.all([
-          apiClient.shops.getAll(),
-          apiClient.products.getAll(),
+        const [productsResponse] = await Promise.all([
+          apiClient.products.search(searchQuery),
         ])
-        setShops(shopsResponse.data)
         setProducts(productsResponse.data)
       } catch (error) {
         console.error("Error fetching data:", error)
@@ -36,11 +31,8 @@ export default function CreateBillScreen() {
       }
     }
     fetchData()
-  }, [])
+  }, [searchQuery])
 
-  const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
 
   const handleAddProduct = (product: Product) => {
     setSelectedProducts((prevProducts) => {
@@ -74,7 +66,7 @@ export default function CreateBillScreen() {
   const totalAmount = selectedProducts.reduce((sum, product) => sum + product.price * product.quantity, 0)
 
   const handleSaveBill = () => {
-    if (!selectedShop) {
+    if (!parsedShop) {
       Alert.alert("Error", "Please select a shop")
       return
     }
@@ -85,9 +77,9 @@ export default function CreateBillScreen() {
     }
 
     const response = apiClient.bills.create({
-      shopId: selectedShop._id,
-      shopName: selectedShop.shopName,
-      doctorName: selectedShop.doctorName,
+      shopId: parsedShop.shopId,
+      shopName: parsedShop.shopName,
+      doctorName: parsedShop.doctorName,
       totalAmount,
       products: selectedProducts.map((product) => ({
         product: product._id,
@@ -120,16 +112,10 @@ export default function CreateBillScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Shop Information</Text>
-          <TouchableOpacity style={styles.shopSelector} onPress={() => setShowShopModal(true)}>
-            {selectedShop ? (
               <View>
-                <Text style={styles.shopName}>{selectedShop.shopName}</Text>
-                <Text style={styles.doctorName}>{selectedShop.doctorName}</Text>
+                <Text style={styles.shopName}>{parsedShop?.shopName}</Text>
+                <Text style={styles.doctorName}>{parsedShop?.doctorName}</Text>
               </View>
-            ) : (
-              <Text style={styles.placeholderText}>Select a shop</Text>
-            )}
-          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -183,37 +169,6 @@ export default function CreateBillScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Shop Selection Modal */}
-      <Modal visible={showShopModal} animationType="slide" transparent={true}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Shop</Text>
-              <TouchableOpacity onPress={() => setShowShopModal(false)}>
-                <X size={24} color="#333" />
-              </TouchableOpacity>
-            </View>
-
-            <FlatList
-              data={shops}
-              keyExtractor={(item) => item._id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.shopItem}
-                  onPress={() => {
-                    setSelectedShop(item)
-                    setShowShopModal(false)
-                  }}
-                >
-                  <Text style={styles.shopItemName}>{item.shopName}</Text>
-                  <Text style={styles.shopItemDoctor}>{item.doctorName}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </View>
-      </Modal>
-
       {/* Product Selection Modal */}
       <Modal visible={showProductModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
@@ -236,7 +191,7 @@ export default function CreateBillScreen() {
             </View>
 
             <FlatList
-              data={filteredProducts}
+              data={products}
               keyExtractor={(item) => item._id}
               renderItem={({ item }) => (
                 <TouchableOpacity style={styles.productSelectItem} onPress={() => handleAddProduct(item)}>

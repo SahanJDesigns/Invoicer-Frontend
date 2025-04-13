@@ -5,14 +5,7 @@ import { createContext, useContext, useState, useEffect } from "react"
 import { router } from "expo-router"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { apiClient } from "@/api/client"
-
-// Mock user data
-const MOCK_USER = {
-  id: "1",
-  name: "John Doe",
-  email: "john@example.com",
-  phone: "+1 (555) 123-4567",
-}
+import { Alert } from "react-native"
 
 type User = {
   id: string
@@ -58,16 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       const response = await apiClient.auth.login(email, password)
+      console.log("Login response:", response)
       if (response.success) {
-        const user = response.data
+        const user = response.user
+        console.log("User signed in:", user)
         await AsyncStorage.setItem("user", JSON.stringify(user))
         setUser(user)
       } else {
-        throw new Error(response.message)
+        throw(Error("Something went wrong"))
       }
-    } catch (error) {
-      console.error("Error signing in:", error)
-      throw error
+    } catch (error:any) {
+      throw(error)
     }
   }
 
@@ -82,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   if (loading) {
-    return null // Or a loading spinner
+    return null 
   }
 
   return <AuthContext.Provider value={{ user, signIn, signOut }}>{children}</AuthContext.Provider>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from "react-native"
 import { useLocalSearchParams, router } from "expo-router"
-import { ArrowLeft, Trash2 } from "lucide-react-native"
+import { ArrowLeft, Cross, Trash2, X } from "lucide-react-native"
 import { useAuth } from "@/components/auth-provider"
 import { Bill } from "@/types/types"
 import { apiClient } from "@/api/client"
@@ -36,7 +36,7 @@ export default function BillDetailsScreen() {
       {
         text: "Delete",
         onPress: () => {
-          // In a real app, you would delete the bill in the backend
+          apiClient.bills.delete(bill?._id as string)
           router.back()
         },
         style: "destructive",
@@ -44,7 +44,7 @@ export default function BillDetailsScreen() {
     ])
   }
 
-  const handlePartialPayment = () => {
+  const handlePartialPayment = async() => {
     const paymentAmount = parseFloat(partialPayment)
 
     if (isNaN(paymentAmount) || paymentAmount <= 0) {
@@ -57,17 +57,43 @@ export default function BillDetailsScreen() {
       Alert.alert("Invalid Amount", "Payment amount exceeds the total amount.")
       return
     }
-    
-    apiClient.bills.addPayment(bill?._id as string, paymentAmount)
-    const updatedBill = { ...bill, currentPayment }
-    updatedBill.payments?.push({
-      amount: paymentAmount,
-      date: new Date()
-    })
+ 
+    await apiClient.bills.addPayment(bill?._id as string, paymentAmount)
+    const fetchedBill = await apiClient.bills.getById(bill?._id as string);
+    const updatedBill = fetchedBill.data
     setBill(updatedBill as Bill)
+
+    if(bill?.totalAmount !== undefined && bill.totalAmount <= currentPayment ){
+      updatedBill.status = "Paid"
+      setBillStatus("Paid")
+    }
+
     setPartialPayment("")
   }
 
+  const haddlePaymentDelete = (paymentId:string) => {
+    Alert.alert("Delete Payment", "Are you sure you want to delete this payment?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        onPress: async() => {
+          await apiClient.bills.deletePayment(paymentId)
+
+          const fetchedBill = await apiClient.bills.getById(bill?._id as string);
+          const updatedBill = fetchedBill.data
+          setBill(updatedBill as Bill)
+          if(bill?.totalAmount !== undefined && bill.totalAmount > bill.currentPayment){
+            updatedBill.status = "unpaid"
+            setBillStatus("unpaid")
+          }
+        },
+        style: "destructive",
+      },
+    ])
+  }
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -130,14 +156,21 @@ export default function BillDetailsScreen() {
           ))}
         </View>
 
+        <View style={styles.totalSection}>
+          <Text style={styles.totalLabel}>Total Amount</Text>
+          <Text style={styles.totalAmount}>${(bill?.totalAmount||0)}</Text>
+        </View>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Payments</Text>
-          {bill?.payments.map((payment, index) => (
-            <View key={index} style={styles.paymentItem}>
+          {bill?.payments.map((payment) => (
+            <View key={payment._id} style={styles.paymentItem}>
               <View style={styles.paymentInfo}>
           <Text style={styles.paymentAmount}>Amount: ${payment.amount.toFixed(2)}</Text>
           <Text style={styles.paymentDate}>Date: {new Date(payment.date).toDateString()}</Text>
               </View>
+              <TouchableOpacity style={styles.deleteButton} onPress={() => haddlePaymentDelete(payment._id)}>
+                <X size={16} color="#E53935" />
+              </TouchableOpacity>
             </View>
           ))}
         </View>
